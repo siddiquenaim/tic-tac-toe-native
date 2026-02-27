@@ -7,7 +7,7 @@ import { GameBoard } from "./tic-tac-toe/components/GameBoard";
 import { ModeSelector } from "./tic-tac-toe/components/ModeSelector";
 import { StatusPill } from "./tic-tac-toe/components/StatusPill";
 import { getWinnerLine, lineToOverlay, pickBotMove } from "./tic-tac-toe/game";
-import { styles } from "./tic-tac-toe/styles";
+import { createStyles, THEMES, ThemeName } from "./tic-tac-toe/styles";
 import { BotDifficulty, Cell, GameMode } from "./tic-tac-toe/types";
 
 export default function HomeScreen() {
@@ -15,7 +15,9 @@ export default function HomeScreen() {
   const [xIsNext, setXIsNext] = useState(true);
   const [mode, setMode] = useState<GameMode>("human");
   const [difficulty, setDifficulty] = useState<BotDifficulty>("medium");
+  const [themeName, setThemeName] = useState<ThemeName>("dark");
   const [botThinking, setBotThinking] = useState(false);
+  const styles = useMemo(() => createStyles(THEMES[themeName]), [themeName]);
 
   const tapSoundRef = useRef<Audio.Sound | null>(null);
   const winSoundRef = useRef<Audio.Sound | null>(null);
@@ -333,7 +335,20 @@ export default function HomeScreen() {
       <View pointerEvents="none" style={styles.bgBlob2} />
 
       <View style={styles.container}>
-        <Text style={styles.h1}>Tic Tac Toe</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.h1}>Tic Tac Toe</Text>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() =>
+              setThemeName((prev) => (prev === "dark" ? "light" : "dark"))
+            }
+            style={styles.themeToggle}
+          >
+            <Text style={styles.themeToggleText}>
+              {themeName === "dark" ? "LIGHT" : "DARK"}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <StatusPill
           statusText={statusText}
@@ -341,14 +356,16 @@ export default function HomeScreen() {
           winner={winner}
           bannerScale={bannerScale}
           bannerGlow={bannerGlow}
+          styles={styles}
         />
 
         <View style={styles.card}>
-          <ModeSelector mode={mode} onChange={onChangeMode} />
+          <ModeSelector mode={mode} onChange={onChangeMode} styles={styles} />
           {mode === "ai" ? (
             <DifficultySelector
               difficulty={difficulty}
               onChange={onChangeDifficulty}
+              styles={styles}
             />
           ) : null}
 
@@ -363,6 +380,7 @@ export default function HomeScreen() {
             burstScale={burstScale}
             burstOpacity={burstOpacity}
             boardLocked={mode === "ai" && (!xIsNext || botThinking)}
+            styles={styles}
           />
 
           <View style={styles.actionsRow}>

@@ -1,16 +1,17 @@
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { styles } from "../styles";
+import { AppStyles } from "../styles";
 import { BotDifficulty } from "../types";
 
 type Props = {
   difficulty: BotDifficulty;
   onChange: (difficulty: BotDifficulty) => void;
+  styles: AppStyles;
 };
 
 const OPTIONS: BotDifficulty[] = ["easy", "medium", "hard"];
 
-export function DifficultySelector({ difficulty, onChange }: Props) {
+export function DifficultySelector({ difficulty, onChange, styles }: Props) {
   return (
     <View style={styles.botRow}>
       <Text style={styles.botLabel}>Bot:</Text>

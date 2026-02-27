@@ -1,7 +1,7 @@
 import React from "react";
 import { Animated, TouchableOpacity, Text, View } from "react-native";
 import { CELL_SIZE, WIN_LINE_HEIGHT } from "../constants";
-import { styles } from "../styles";
+import { AppStyles } from "../styles";
 import { Cell, WinOverlay } from "../types";
 
 type Props = {
@@ -15,6 +15,7 @@ type Props = {
   burstScale: Animated.AnimatedInterpolation<number>;
   burstOpacity: Animated.AnimatedInterpolation<number>;
   boardLocked: boolean;
+  styles: AppStyles;
 };
 
 export function GameBoard({
@@ -28,6 +29,7 @@ export function GameBoard({
   burstScale,
   burstOpacity,
   boardLocked,
+  styles,
 }: Props) {
   return (
     <View style={styles.boardWrap}>

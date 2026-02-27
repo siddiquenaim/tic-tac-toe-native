@@ -1,11 +1,12 @@
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { styles } from "../styles";
+import { AppStyles } from "../styles";
 import { GameMode } from "../types";
 
 type Props = {
   mode: GameMode;
   onChange: (mode: GameMode) => void;
+  styles: AppStyles;
 };
 
 const OPTIONS: { value: GameMode; label: string }[] = [
@@ -13,7 +14,7 @@ const OPTIONS: { value: GameMode; label: string }[] = [
   { value: "ai", label: "vs AI" },
 ];
 
-export function ModeSelector({ mode, onChange }: Props) {
+export function ModeSelector({ mode, onChange, styles }: Props) {
   return (
     <View style={styles.modeRow}>
       <Text style={styles.modeLabel}>Mode:</Text>

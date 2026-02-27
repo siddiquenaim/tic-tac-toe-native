@@ -5,7 +5,7 @@ import {
   Text,
   ViewStyle,
 } from "react-native";
-import { styles } from "../styles";
+import { AppStyles } from "../styles";
 
 type Props = {
   statusText: string;
@@ -13,6 +13,7 @@ type Props = {
   winner: string | null;
   bannerScale: Animated.AnimatedInterpolation<number>;
   bannerGlow: Animated.AnimatedInterpolation<number>;
+  styles: AppStyles;
 };
 
 export function StatusPill({
@@ -21,6 +22,7 @@ export function StatusPill({
   winner,
   bannerScale,
   bannerGlow,
+  styles,
 }: Props) {
   return (
     <Animated.View
