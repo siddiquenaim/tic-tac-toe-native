@@ -1,13 +1,22 @@
 import { Audio } from "expo-av";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Text, TouchableOpacity, View } from "react-native";
+import {
+  Animated,
+  BackHandler,
+  Easing,
+  Modal,
+  Pressable,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DifficultySelector } from "./tic-tac-toe/components/DifficultySelector";
 import { GameBoard } from "./tic-tac-toe/components/GameBoard";
 import { ModeSelector } from "./tic-tac-toe/components/ModeSelector";
 import { StatusPill } from "./tic-tac-toe/components/StatusPill";
 import { getWinnerLine, lineToOverlay, pickBotMove } from "./tic-tac-toe/game";
-import { createStyles, THEMES, ThemeName } from "./tic-tac-toe/styles";
+import { createStyles, ThemeName, THEMES } from "./tic-tac-toe/styles";
 import { BotDifficulty, Cell, GameMode } from "./tic-tac-toe/types";
 
 export default function HomeScreen() {
@@ -16,7 +25,11 @@ export default function HomeScreen() {
   const [mode, setMode] = useState<GameMode>("human");
   const [difficulty, setDifficulty] = useState<BotDifficulty>("medium");
   const [themeName, setThemeName] = useState<ThemeName>("dark");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [introVisible, setIntroVisible] = useState(true);
   const [botThinking, setBotThinking] = useState(false);
+  const [botStartsNextRound, setBotStartsNextRound] = useState(false);
   const styles = useMemo(() => createStyles(THEMES[themeName]), [themeName]);
 
   const tapSoundRef = useRef<Audio.Sound | null>(null);
@@ -24,10 +37,12 @@ export default function HomeScreen() {
   const drawSoundRef = useRef<Audio.Sound | null>(null);
   const didEndSoundRef = useRef(false);
   const botTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const introOpacity = useRef(new Animated.Value(1)).current;
+  const introScale = useRef(new Animated.Value(0.92)).current;
 
   const play = async (s: Audio.Sound | null) => {
     try {
-      if (!s) return;
+      if (!s || !musicEnabled) return;
       await s.replayAsync();
     } catch {
       // ignore
@@ -90,6 +105,39 @@ export default function HomeScreen() {
       drawSoundRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    introOpacity.setValue(1);
+    introScale.setValue(0.92);
+
+    Animated.spring(introScale, {
+      toValue: 1,
+      friction: 6,
+      tension: 90,
+      useNativeDriver: true,
+    }).start();
+
+    const timeout = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(introOpacity, {
+          toValue: 0,
+          duration: 420,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(introScale, {
+          toValue: 1.06,
+          duration: 420,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]).start(() => setIntroVisible(false));
+    }, 950);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [introOpacity, introScale]);
 
   const cellScales = useRef(
     Array.from({ length: 9 }, () => new Animated.Value(1)),
@@ -158,11 +206,19 @@ export default function HomeScreen() {
     ]).start();
   }
 
-  function reset() {
+  function startRound(
+    targetMode: GameMode = mode,
+    nextBotStarts: boolean = botStartsNextRound,
+  ) {
     clearBotTimer();
     setBoard(Array(9).fill(null));
-    setXIsNext(true);
     setBotThinking(false);
+    if (targetMode === "ai") {
+      setXIsNext(!nextBotStarts);
+      setBotStartsNextRound(!nextBotStarts);
+    } else {
+      setXIsNext(true);
+    }
 
     didEndSoundRef.current = false;
 
@@ -171,25 +227,18 @@ export default function HomeScreen() {
     burst.setValue(0);
 
     for (const s of cellScales) s.setValue(1);
+  }
+
+  function reset() {
+    startRound();
   }
 
   function newRound() {
-    clearBotTimer();
-    setBoard(Array(9).fill(null));
-    setXIsNext(true);
-    setBotThinking(false);
-
-    didEndSoundRef.current = false;
-
-    winLineAnim.setValue(0);
-    winPulse.setValue(0);
-    burst.setValue(0);
-
-    for (const s of cellScales) s.setValue(1);
+    startRound();
   }
 
   function onPressCell(i: number) {
-    if (winner || board[i]) return;
+    if (winner || board[i] || introVisible) return;
     if (mode === "ai" && (!xIsNext || botThinking)) return;
 
     play(tapSoundRef.current);
@@ -210,13 +259,18 @@ export default function HomeScreen() {
   function onChangeMode(nextMode: GameMode) {
     if (nextMode === mode) return;
     setMode(nextMode);
-    newRound();
+    startRound(nextMode, false);
   }
 
   function onChangeDifficulty(nextDifficulty: BotDifficulty) {
     if (nextDifficulty === difficulty) return;
     setDifficulty(nextDifficulty);
     if (mode === "ai") newRound();
+  }
+
+  function exitApp() {
+    setMenuOpen(false);
+    BackHandler.exitApp();
   }
 
   useEffect(() => {
@@ -263,7 +317,7 @@ export default function HomeScreen() {
       return;
     }
 
-    if (xIsNext || winner || isDraw) {
+    if (xIsNext || winner || isDraw || introVisible) {
       setBotThinking(false);
       clearBotTimer();
       return;
@@ -292,7 +346,7 @@ export default function HomeScreen() {
     return () => {
       clearBotTimer();
     };
-  }, [board, difficulty, isDraw, mode, winner, xIsNext]);
+  }, [board, difficulty, introVisible, isDraw, mode, winner, xIsNext]);
 
   const winOverlay = useMemo(() => {
     if (!winnerLine) return null;
@@ -336,76 +390,215 @@ export default function HomeScreen() {
 
       <View style={styles.container}>
         <View style={styles.titleRow}>
-          <Text style={styles.h1}>Tic Tac Toe</Text>
+          <View style={styles.titleBlock}>
+            <Text style={styles.h1}>Tic Tac Toe</Text>
+            {/* <Text style={styles.subtitle}>One screen. No bottom nav.</Text> */}
+          </View>
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() =>
-              setThemeName((prev) => (prev === "dark" ? "light" : "dark"))
-            }
-            style={styles.themeToggle}
+            onPress={() => setMenuOpen(true)}
+            style={styles.menuButton}
           >
-            <Text style={styles.themeToggleText}>
-              {themeName === "dark" ? "LIGHT" : "DARK"}
-            </Text>
+            <View style={styles.menuBars}>
+              <View style={styles.menuBar} />
+              <View style={styles.menuBar} />
+              <View style={styles.menuBar} />
+            </View>
           </TouchableOpacity>
         </View>
 
-        <StatusPill
-          statusText={statusText}
-          statusPillStyle={statusPillStyle}
-          winner={winner}
-          bannerScale={bannerScale}
-          bannerGlow={bannerGlow}
-          styles={styles}
-        />
-
-        <View style={styles.card}>
-          <ModeSelector mode={mode} onChange={onChangeMode} styles={styles} />
-          {mode === "ai" ? (
-            <DifficultySelector
-              difficulty={difficulty}
-              onChange={onChangeDifficulty}
-              styles={styles}
-            />
-          ) : null}
-
-          <GameBoard
-            board={board}
-            cellScales={cellScales}
-            onPressCell={onPressCell}
-            winningSet={winningSet}
+        <View style={styles.contentArea}>
+          <StatusPill
+            statusText={statusText}
+            statusPillStyle={statusPillStyle}
             winner={winner}
-            winOverlay={winOverlay}
-            lineScaleX={lineScaleX}
-            burstScale={burstScale}
-            burstOpacity={burstOpacity}
-            boardLocked={mode === "ai" && (!xIsNext || botThinking)}
+            bannerScale={bannerScale}
+            bannerGlow={bannerGlow}
             styles={styles}
           />
 
-          <View style={styles.actionsRow}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={reset}
-              style={styles.btnGhost}
-            >
-              <Text style={styles.btnGhostText}>Reset</Text>
-            </TouchableOpacity>
+          <View style={styles.card}>
+            <GameBoard
+              board={board}
+              cellScales={cellScales}
+              onPressCell={onPressCell}
+              winningSet={winningSet}
+              winner={winner}
+              winOverlay={winOverlay}
+              lineScaleX={lineScaleX}
+              burstScale={burstScale}
+              burstOpacity={burstOpacity}
+              boardLocked={
+                introVisible || (mode === "ai" && (!xIsNext || botThinking))
+              }
+              styles={styles}
+            />
 
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={newRound}
-              style={styles.btnPrimary}
-            >
-              <Text style={styles.btnPrimaryText}>New Round</Text>
-            </TouchableOpacity>
+            <View style={styles.actionsRow}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={reset}
+                style={styles.btnGhost}
+              >
+                <Text style={styles.btnGhostText}>Reset</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={newRound}
+                style={styles.btnPrimary}
+              >
+                <Text style={styles.btnPrimaryText}>New Round</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.tip}>
+              {mode === "ai"
+                ? "Play as X. Bot plays O."
+                : "Pass and play: X vs O."}
+            </Text>
           </View>
-
-          <Text style={styles.tip}>
-            {mode === "ai" ? "Play as X. Bot plays O." : "Pass and play: X vs O."}
-          </Text>
         </View>
       </View>
+
+      <Modal
+        visible={menuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuOpen(false)}
+      >
+        <View style={styles.menuBackdrop}>
+          <Pressable
+            style={styles.menuDismissZone}
+            onPress={() => setMenuOpen(false)}
+          />
+          <View style={styles.menuSheetWrap}>
+            <View style={styles.menuSheet}>
+              <View style={styles.menuHeader}>
+                <Text style={styles.menuTitle}>Settings</Text>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => setMenuOpen(false)}
+                  style={styles.menuClose}
+                >
+                  <Text style={styles.menuCloseText}>X</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.settingRow}>
+                <Text style={styles.settingLabel}>Theme:</Text>
+                <View style={styles.toggleGroup}>
+                  {(["dark", "light"] as ThemeName[]).map((option) => {
+                    const active = themeName === option;
+                    return (
+                      <TouchableOpacity
+                        key={option}
+                        activeOpacity={0.8}
+                        onPress={() => setThemeName(option)}
+                        style={[
+                          styles.toggleChip,
+                          active ? styles.toggleChipActive : null,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.toggleChipText,
+                            active ? styles.toggleChipTextActive : null,
+                          ]}
+                        >
+                          {option.toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.settingRow}>
+                <Text style={styles.settingLabel}>Music:</Text>
+                <View style={styles.toggleGroup}>
+                  {[
+                    { label: "ON", value: true },
+                    { label: "OFF", value: false },
+                  ].map((option) => {
+                    const active = musicEnabled === option.value;
+                    return (
+                      <TouchableOpacity
+                        key={option.label}
+                        activeOpacity={0.8}
+                        onPress={() => setMusicEnabled(option.value)}
+                        style={[
+                          styles.toggleChip,
+                          active ? styles.toggleChipActive : null,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.toggleChipText,
+                            active ? styles.toggleChipTextActive : null,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <ModeSelector
+                mode={mode}
+                onChange={onChangeMode}
+                styles={styles}
+              />
+              {mode === "ai" ? (
+                <DifficultySelector
+                  difficulty={difficulty}
+                  onChange={onChangeDifficulty}
+                  styles={styles}
+                />
+              ) : null}
+
+              <Text style={styles.menuTip}>
+                Changes apply immediately. Switching game mode or AI difficulty
+                starts a fresh round.
+              </Text>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={exitApp}
+                style={styles.exitButton}
+              >
+                <Text style={styles.exitButtonText}>Exit App</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {introVisible ? (
+        <Animated.View
+          pointerEvents="auto"
+          style={[
+            styles.introOverlay,
+            {
+              opacity: introOpacity,
+              transform: [{ scale: introScale }],
+            },
+          ]}
+        >
+          <View pointerEvents="none" style={styles.introGlow} />
+          <View style={styles.introCard}>
+            <Text style={styles.introTitle}>Tic Tac Toe</Text>
+            <View style={styles.introMarks}>
+              <Text style={styles.introMarkX}>X</Text>
+              <View style={styles.introDash} />
+              <Text style={styles.introMarkO}>O</Text>
+            </View>
+            <Text style={styles.introCaption}>Ready for the next round</Text>
+          </View>
+        </Animated.View>
+      ) : null}
     </SafeAreaView>
   );
 }

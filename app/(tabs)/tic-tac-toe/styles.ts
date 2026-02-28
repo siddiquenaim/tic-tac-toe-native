@@ -6,9 +6,13 @@ import {
   WIN_LINE_HEIGHT,
 } from "./constants";
 
-const titleFont = Platform.select({ ios: "Georgia", android: "serif" }) ?? "serif";
-const bodyFont = Platform.select({ ios: "Avenir Next", android: "sans-serif" }) ?? "sans-serif";
-const strongFont = Platform.select({ ios: "Avenir Next", android: "sans-serif-medium" }) ?? "sans-serif-medium";
+const titleFont =
+  Platform.select({ ios: "Marker Felt", android: "casual" }) ?? "sans-serif";
+const bodyFont =
+  Platform.select({ ios: "Trebuchet MS", android: "sans-serif" }) ?? "sans-serif";
+const strongFont =
+  Platform.select({ ios: "Trebuchet MS", android: "sans-serif-medium" }) ??
+  "sans-serif-medium";
 
 export type ThemeName = "dark" | "light";
 
@@ -16,6 +20,7 @@ export const THEMES = {
   dark: {
     bg: "#0B1220",
     card: "rgba(255,255,255,0.08)",
+    menuSurface: "#121B2F",
     cardBorder: "rgba(255,255,255,0.12)",
     text: "#EAF0FF",
     muted: "rgba(234,240,255,0.72)",
@@ -47,6 +52,7 @@ export const THEMES = {
   light: {
     bg: "#F4F7FF",
     card: "rgba(255,255,255,0.82)",
+    menuSurface: "#FFFFFF",
     cardBorder: "rgba(20,30,60,0.10)",
     text: "#13213D",
     muted: "rgba(19,33,61,0.68)",
@@ -87,7 +93,14 @@ export function createStyles(theme: AppTheme) {
       flex: 1,
       paddingHorizontal: 18,
       paddingTop: 10,
+      paddingBottom: 18,
       alignItems: "center",
+    },
+    contentArea: {
+      flex: 1,
+      width: "100%",
+      alignItems: "center",
+      justifyContent: "center",
     },
 
     bgBlob1: {
@@ -117,28 +130,160 @@ export function createStyles(theme: AppTheme) {
       justifyContent: "space-between",
       gap: 10,
     },
+    titleBlock: {
+      flexShrink: 1,
+    },
+    subtitle: {
+      marginTop: 2,
+      color: theme.muted,
+      fontSize: 13,
+      fontWeight: "600",
+      letterSpacing: 0.1,
+      fontFamily: bodyFont,
+    },
 
     h1: {
-      fontSize: 38,
-      fontWeight: "700",
+      fontSize: 40,
+      fontWeight: "600",
       color: theme.text,
-      letterSpacing: 0.4,
+      letterSpacing: 0.2,
       fontFamily: titleFont,
     },
 
-    themeToggle: {
-      paddingHorizontal: 14,
-      paddingVertical: 9,
-      borderRadius: 999,
+    menuButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: theme.themeToggleBorder,
       backgroundColor: theme.themeToggleBg,
+      alignItems: "center",
+      justifyContent: "center",
     },
-    themeToggleText: {
-      color: theme.themeToggleText,
+    menuBars: {
+      width: 18,
+      gap: 4,
+    },
+    menuBar: {
+      height: 2,
+      borderRadius: 999,
+      backgroundColor: theme.themeToggleText,
+    },
+    menuBackdrop: {
+      flex: 1,
+      backgroundColor: "rgba(5, 10, 20, 0.48)",
+      justifyContent: "flex-start",
+    },
+    menuDismissZone: {
+      flex: 1,
+      width: "100%",
+    },
+    menuSheetWrap: {
+      width: "100%",
+      paddingHorizontal: 18,
+      paddingBottom: 18,
+    },
+    menuSheet: {
+      width: "100%",
+      maxWidth: 420,
+      alignSelf: "center",
+      borderRadius: 24,
+      padding: 18,
+      backgroundColor: theme.menuSurface,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+    },
+    menuHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+      marginBottom: 14,
+    },
+    menuTitle: {
+      color: theme.text,
+      fontSize: 20,
+      fontWeight: "600",
+      letterSpacing: 0.1,
+      fontFamily: titleFont,
+    },
+    menuClose: {
+      width: 36,
+      height: 36,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(255,255,255,0.04)",
+    },
+    menuCloseText: {
+      color: theme.text,
+      fontSize: 16,
+      fontWeight: "700",
+      fontFamily: strongFont,
+    },
+    settingRow: {
+      marginBottom: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+    },
+    settingLabel: {
+      color: theme.muted,
+      fontSize: 13,
+      fontWeight: "700",
+      letterSpacing: 0.3,
+      fontFamily: strongFont,
+    },
+    toggleGroup: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    toggleChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+      backgroundColor: "rgba(255,255,255,0.04)",
+    },
+    toggleChipActive: {
+      backgroundColor: theme.primaryBtnBg,
+      borderColor: theme.primaryBtnBorder,
+    },
+    toggleChipText: {
+      color: theme.muted,
       fontSize: 12,
       fontWeight: "700",
-      letterSpacing: 0.5,
+      letterSpacing: 0.25,
+      fontFamily: strongFont,
+    },
+    toggleChipTextActive: {
+      color: theme.text,
+    },
+    menuTip: {
+      marginTop: 6,
+      color: theme.muted,
+      fontSize: 12,
+      lineHeight: 17,
+      fontFamily: bodyFont,
+    },
+    exitButton: {
+      marginTop: 14,
+      paddingVertical: 12,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: "rgba(255,84,104,0.28)",
+      backgroundColor: "rgba(255,84,104,0.12)",
+      alignItems: "center",
+    },
+    exitButtonText: {
+      color: theme.text,
+      fontSize: 13,
+      fontWeight: "700",
+      letterSpacing: 0.25,
       fontFamily: strongFont,
     },
 
@@ -293,10 +438,10 @@ export function createStyles(theme: AppTheme) {
 
     cellText: {
       fontSize: 62,
-      fontWeight: "700",
+      fontWeight: "600",
       color: theme.text,
       fontFamily: titleFont,
-      letterSpacing: 0.2,
+      letterSpacing: 0.1,
     },
     xText: { color: theme.x },
     oText: { color: theme.o },
@@ -373,6 +518,71 @@ export function createStyles(theme: AppTheme) {
       fontSize: 13,
       textAlign: "center",
       lineHeight: 18,
+      fontFamily: bodyFont,
+    },
+    introOverlay: {
+      position: "absolute",
+      inset: 0,
+      backgroundColor: theme.bg,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 24,
+      zIndex: 30,
+    },
+    introGlow: {
+      position: "absolute",
+      width: 260,
+      height: 260,
+      borderRadius: 260,
+      backgroundColor: theme.blob1,
+    },
+    introCard: {
+      width: "100%",
+      maxWidth: 300,
+      borderRadius: 28,
+      paddingVertical: 28,
+      paddingHorizontal: 24,
+      alignItems: "center",
+      backgroundColor: theme.card,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+    },
+    introTitle: {
+      color: theme.text,
+      fontSize: 34,
+      fontWeight: "600",
+      letterSpacing: 0.2,
+      fontFamily: titleFont,
+    },
+    introMarks: {
+      marginTop: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 18,
+    },
+    introMarkX: {
+      color: theme.x,
+      fontSize: 44,
+      fontWeight: "600",
+      fontFamily: titleFont,
+    },
+    introMarkO: {
+      color: theme.o,
+      fontSize: 44,
+      fontWeight: "600",
+      fontFamily: titleFont,
+    },
+    introDash: {
+      width: 48,
+      height: 6,
+      borderRadius: 999,
+      backgroundColor: theme.line,
+    },
+    introCaption: {
+      marginTop: 14,
+      color: theme.muted,
+      fontSize: 12,
+      letterSpacing: 0.15,
       fontFamily: bodyFont,
     },
   });
