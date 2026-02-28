@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Audio } from "expo-av";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -19,6 +20,27 @@ import { getWinnerLine, lineToOverlay, pickBotMove } from "./tic-tac-toe/game";
 import { createStyles, ThemeName, THEMES } from "./tic-tac-toe/styles";
 import { BotDifficulty, Cell, GameMode } from "./tic-tac-toe/types";
 
+const SETTINGS_KEY = "tic-tac-toe:settings";
+
+type StoredSettings = {
+  themeName: ThemeName;
+  mode: GameMode;
+  difficulty: BotDifficulty;
+  musicEnabled: boolean;
+};
+
+function isThemeName(value: unknown): value is ThemeName {
+  return value === "dark" || value === "light";
+}
+
+function isGameMode(value: unknown): value is GameMode {
+  return value === "human" || value === "ai";
+}
+
+function isBotDifficulty(value: unknown): value is BotDifficulty {
+  return value === "easy" || value === "medium" || value === "hard";
+}
+
 export default function HomeScreen() {
   const [board, setBoard] = useState<Cell[]>(Array(9).fill(null));
   const [xIsNext, setXIsNext] = useState(true);
@@ -30,6 +52,7 @@ export default function HomeScreen() {
   const [introVisible, setIntroVisible] = useState(true);
   const [botThinking, setBotThinking] = useState(false);
   const [botStartsNextRound, setBotStartsNextRound] = useState(false);
+  const [settingsReady, setSettingsReady] = useState(false);
   const styles = useMemo(() => createStyles(THEMES[themeName]), [themeName]);
 
   const tapSoundRef = useRef<Audio.Sound | null>(null);
@@ -54,6 +77,51 @@ export default function HomeScreen() {
     clearTimeout(botTimerRef.current);
     botTimerRef.current = null;
   }
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const raw = await AsyncStorage.getItem(SETTINGS_KEY);
+        if (!raw) return;
+
+        const parsed = JSON.parse(raw) as Partial<StoredSettings>;
+
+        if (isThemeName(parsed.themeName)) {
+          setThemeName(parsed.themeName);
+        }
+        if (isGameMode(parsed.mode)) {
+          setMode(parsed.mode);
+        }
+        if (isBotDifficulty(parsed.difficulty)) {
+          setDifficulty(parsed.difficulty);
+        }
+        if (typeof parsed.musicEnabled === "boolean") {
+          setMusicEnabled(parsed.musicEnabled);
+        }
+      } catch (e) {
+        console.log("[Settings] failed to load", e);
+      } finally {
+        setSettingsReady(true);
+      }
+    }
+
+    loadSettings();
+  }, []);
+
+  useEffect(() => {
+    if (!settingsReady) return;
+
+    const payload: StoredSettings = {
+      themeName,
+      mode,
+      difficulty,
+      musicEnabled,
+    };
+
+    AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(payload)).catch((e) => {
+      console.log("[Settings] failed to save", e);
+    });
+  }, [difficulty, mode, musicEnabled, settingsReady, themeName]);
 
   useEffect(() => {
     let mounted = true;
@@ -107,6 +175,8 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
+    if (!settingsReady) return;
+
     introOpacity.setValue(1);
     introScale.setValue(0.92);
 
@@ -137,7 +207,7 @@ export default function HomeScreen() {
     return () => {
       clearTimeout(timeout);
     };
-  }, [introOpacity, introScale]);
+  }, [introOpacity, introScale, settingsReady]);
 
   const cellScales = useRef(
     Array.from({ length: 9 }, () => new Animated.Value(1)),
@@ -166,6 +236,7 @@ export default function HomeScreen() {
     } else if (!winner && !isDraw) {
       didEndSoundRef.current = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [winner, isDraw]);
 
   const statusText = winner
@@ -346,6 +417,7 @@ export default function HomeScreen() {
     return () => {
       clearBotTimer();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [board, difficulty, introVisible, isDraw, mode, winner, xIsNext]);
 
   const winOverlay = useMemo(() => {
@@ -571,6 +643,10 @@ export default function HomeScreen() {
               >
                 <Text style={styles.exitButtonText}>Exit App</Text>
               </TouchableOpacity>
+
+              <Text style={styles.menuFooter}>
+                All rights reserved by NS Hamza
+              </Text>
             </View>
           </View>
         </View>

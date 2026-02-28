@@ -270,6 +270,14 @@ export function createStyles(theme: AppTheme) {
       lineHeight: 17,
       fontFamily: bodyFont,
     },
+    menuFooter: {
+      marginTop: 12,
+      color: theme.muted,
+      fontSize: 11,
+      textAlign: "center",
+      lineHeight: 16,
+      fontFamily: bodyFont,
+    },
     exitButton: {
       marginTop: 14,
       paddingVertical: 12,
